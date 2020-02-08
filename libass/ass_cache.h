@@ -72,6 +72,7 @@ enum {
     FILTER_BORDER_STYLE_3 = 1,
     FILTER_NONZERO_BORDER = 2,
     FILTER_NONZERO_SHADOW = 4,
+    FILTER_FILL_IN_SHADOW = 8,
 };
 
 typedef struct {

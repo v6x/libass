@@ -2246,6 +2246,10 @@ static void render_and_combine_glyphs(ASS_Renderer *render_priv,
             // In this case no shadow is supposed to be rendered.
             if (flags == FILTER_NONZERO_SHADOW && (info->c[0] & 0xFF) == 0xFF)
                 flags = 0;
+            if (info->effect_type == EF_KARAOKE_KF ||
+                info->effect_type == EF_KARAOKE_KO ||
+                (info->c[0] & 0xFF) != 0xFF)
+                flags |= FILTER_FILL_IN_SHADOW;
 
             if (linebreak || is_new_bm_run(info, last_info)) {
                 linebreak = 0;
@@ -2453,6 +2457,9 @@ size_t ass_composite_construct(void *key, void *value, void *priv)
         ass_synth_blur(render_priv->engine, &v->bm, k->filter.be, r2);
     ass_synth_blur(render_priv->engine, &v->bm_o, k->filter.be, r2);
 
+    if (!(flags & FILTER_FILL_IN_SHADOW) && no_blur)
+        fix_outline(&v->bm, &v->bm_o);
+
     if (flags & FILTER_NONZERO_SHADOW) {
         if (flags & FILTER_NONZERO_BORDER)
             copy_bitmap(render_priv->engine, &v->bm_s, &v->bm_o);
@@ -2462,6 +2469,9 @@ size_t ass_composite_construct(void *key, void *value, void *priv)
         } else
             copy_bitmap(render_priv->engine, &v->bm_s, &v->bm);
 
+        if (!(flags & FILTER_FILL_IN_SHADOW) && !no_blur)
+            fix_outline(&v->bm, &v->bm_o);
+
         // Works right even for negative offsets
         // '>>' rounds toward negative infinity, '&' returns correct remainder
         v->bm_s.left += k->filter.shadow.x >> 6;
@@ -2469,7 +2479,7 @@ size_t ass_composite_construct(void *key, void *value, void *priv)
         shift_bitmap(&v->bm_s, k->filter.shadow.x & SUBPIXEL_MASK, k->filter.shadow.y & SUBPIXEL_MASK);
     }
 
-    if (no_blur)
+    if ((flags & FILTER_FILL_IN_SHADOW) && no_blur)
         fix_outline(&v->bm, &v->bm_o);
 
     return sizeof(CompositeHashKey) + sizeof(CompositeHashValue) +
