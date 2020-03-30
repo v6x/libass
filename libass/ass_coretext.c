@@ -213,8 +213,11 @@ static void match_fonts(ASS_Library *lib, ASS_FontProvider *provider,
     SAFE_CFRelease(cfname);
 }
 
-static char *get_fallback(void *priv, const char *family, uint32_t codepoint)
+static char *get_fallback(ASS_Library *lib, void *priv, const char *family,
+                          uint32_t codepoint)
 {
+    const char* CATALINA_FIX_FALLBACK_NAME = ".Apple Symbols Fallback";
+
     CFStringRef name = CFStringCreateWithBytes(
         0, (UInt8 *)family, strlen(family), kCFStringEncodingUTF8, false);
     CTFontRef font = CTFontCreateWithName(name, 0, NULL);
@@ -225,6 +228,26 @@ static char *get_fallback(void *priv, const char *family, uint32_t codepoint)
     CTFontRef fb = CTFontCreateForString(font, r, CFRangeMake(0, 1));
     CFStringRef cffamily = CTFontCopyFamilyName(fb);
     char *res_family = cfstr2buf(cffamily);
+
+    if (res_family &&
+        strcmp((const char*)res_family, CATALINA_FIX_FALLBACK_NAME) == 0) {
+        CFStringRef psname = CTFontCopyPostScriptName(fb);
+        CTFontRef psfont = CTFontCreateWithName(psname, 0, NULL);
+        if (psfont) {
+            char *psfont_family = cfstr2buf(CTFontCopyFamilyName(psfont));
+            ass_msg(lib,
+                    MSGL_INFO,
+                    "Fix fallback font family name : %s => %s \n",
+                    res_family,
+                    psfont_family);
+
+            SAFE_CFRelease(psfont);
+            free(res_family);
+
+            res_family = psfont_family;
+        }
+        SAFE_CFRelease(psname);
+    }
 
     SAFE_CFRelease(name);
     SAFE_CFRelease(font);

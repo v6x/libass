@@ -141,13 +141,15 @@ typedef void    (*SubstituteFontFunc)(void *priv, const char *name,
  * Note that fontselect uses the font provider set as default to determine
  * fallbacks.
  *
+ * \param lib ASS_Library instance
  * \param priv font provider private data
  * \param family original font family name (try matching a similar font) (never NULL)
  * \param codepoint Unicode codepoint (UTF-32)
  * \return output font family, allocated with malloc(), must be freed
  *         by caller.
  */
-typedef char   *(*GetFallbackFunc)(void *priv,
+typedef char   *(*GetFallbackFunc)(ASS_Library *lib,
+                                   void *priv,
                                    const char *family,
                                    uint32_t codepoint);
 
